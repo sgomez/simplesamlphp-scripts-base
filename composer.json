@@ -1,0 +1,30 @@
+{
+    "name": "sgomez/simplesamlphp-scripts-base",
+    "description": "Composer hooks for sgomez/simplesamlphp-base package.",
+    "type": "library",
+    "keywords": ["simplesamlphp"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Sergio Gómez",
+            "email": "sergio@uco.es"
+        }
+    ],
+    "require": {
+        "php": ">=5.5.9",
+        "symfony/filesystem": "^2.8|^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Sgomez\\SimpleSamlPhp\\": "src/"
+        }
+    },
+    "require-dev": {
+        "composer/composer": "^1.4"
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0.x-dev"
+        }
+    }
+}
