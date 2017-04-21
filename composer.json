@@ -1,0 +1,24 @@
+{
+    "name": "sgomez/simplesamlphp-scripts-base",
+    "description": "Scripts for sgomez/simplesamlphp-base",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Sergio Gómez",
+            "email": "sergio@uco.es"
+        }
+    ],
+    "require": {
+        "php": ">=5.5.9",
+        "symfony/filesystem": "^2.8|^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Sgomez\\SimpleSamlPhp\\": "src/"
+        }
+    },
+    "require-dev": {
+        "composer/composer": "^1.4"
+    }
+}
