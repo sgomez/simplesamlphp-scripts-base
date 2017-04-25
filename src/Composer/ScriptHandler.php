@@ -13,31 +13,67 @@ namespace Sgomez\SimpleSamlPhp\Composer;
 
 use Composer\Package\Loader\InvalidPackageException;
 use Composer\Package\PackageInterface;
+use Composer\Installer\PackageEvent;
 use Composer\Script\Event;
 use Symfony\Component\Filesystem\Filesystem;
 
 class ScriptHandler
 {
-    public static function installModules(Event $event)
+    public static function __callStatic($name, $arguments)
     {
-        $ssp = static::getSimpleSamlPhpPackage($event);
-        $sspPath = static::getInstallPath($event, $ssp);
-        $sspModules = static::getSimpleSamlPhpPackageModules($event);
-
-        /** @var PackageInterface $sspModule */
-        foreach ($sspModules as $sspModule) {
+        $event = $arguments[0];
+        if ($event instanceof Event) {
             $event
                 ->getIO()
-                ->write(sprintf('  - Installing <info>%s</info> (<comment>%s</comment>)',
+                ->writeError('<error>This script is not longer available</error>. Please read <info>https://github.com/sgomez/simplesamlphp-base/blob/master/UPDATE.md</info>.');
+        }
+    }
+
+    public static function installModuleHook(PackageEvent $event)
+    {
+        $sspModule = static::getComposerPackage($event);
+
+        if ($sspModule->getType() === 'simplesamlphp-module') {
+            $event
+                ->getIO()
+                ->write(sprintf('  - Copying <info>%s</info> (<comment>%s</comment>) to modules',
                     $sspModule->getName(),
                     $sspModule->getPrettyVersion()
                 ));
 
-            static::installModule($event, $sspModule, $sspPath);
+            static::installModule($event, $sspModule);
         }
     }
 
-    protected static function getInstallPath(Event $event, PackageInterface $package)
+    public static function uninstallModuleHook(PackageEvent $event)
+    {
+        $sspModule = static::getComposerPackage($event);
+
+        if ($sspModule->getType() === 'simplesamlphp-module') {
+            $event
+                ->getIO()
+                ->write(sprintf('  - Deleting <info>%s</info> (<comment>%s</comment>) from modules',
+                    $sspModule->getName(),
+                    $sspModule->getPrettyVersion()
+                ));
+
+            static::uninstallModule($event, $sspModule);
+        }
+
+    }
+
+    /**
+     * @param PackageEvent $event
+     * @return PackageInterface
+     */
+    protected static function getComposerPackage(PackageEvent $event)
+    {
+        return $event
+            ->getOperation()
+            ->getPackage();
+    }
+
+    protected static function getInstallPath(PackageEvent $event, PackageInterface $package)
     {
         return $event
             ->getComposer()
@@ -45,7 +81,7 @@ class ScriptHandler
             ->getInstallPath($package);
     }
 
-    protected static function getSimpleSamlPhpPackage(Event $event)
+    protected static function getSimpleSamlPhpPackage(PackageEvent $event)
     {
         $package = $event
             ->getComposer()
@@ -60,7 +96,7 @@ class ScriptHandler
         return $package;
     }
 
-    protected static function getSimpleSamlPhpPackageModules(Event $event)
+    protected static function getSimpleSamlPhpPackageModules(PackageEvent $event)
     {
         $packages = $event
             ->getComposer()
@@ -74,13 +110,44 @@ class ScriptHandler
     }
 
     /**
+     * @param PackageEvent $event
      * @param PackageInterface $module
-     * @param $sspPath
      *
      * @see https://github.com/simplesamlphp/composer-module-installer/blob/master/src/SimpleSamlPhp/Composer/ModuleInstaller.php
      */
-    protected static function installModule(Event $event, PackageInterface $module, $sspPath)
+    protected static function installModule(PackageEvent $event, PackageInterface $module)
     {
+        $destDir = self::getModuleDestinationDir($event, $module);
+
+        $fs = new Filesystem();
+        $fs->mirror(
+            static::getInstallPath($event, $module),
+            $destDir
+        );
+    }
+
+    /**
+     * @param PackageEvent $event
+     * @param PackageInterface $module
+     */
+    protected static function uninstallModule(PackageEvent $event, PackageInterface $module)
+    {
+        $destDir = self::getModuleDestinationDir($event, $module);
+        $fs = new Filesystem();
+        $fs->remove($destDir);
+    }
+
+
+    /**
+     * @param PackageEvent $event
+     * @param PackageInterface $module
+     * @return string
+     */
+    protected static function getModuleDestinationDir(PackageEvent $event, PackageInterface $module)
+    {
+        $ssp = static::getSimpleSamlPhpPackage($event);
+        $sspPath = static::getInstallPath($event, $ssp);
+
         $name = $module->getPrettyName();
         if (!preg_match('@^.*/simplesamlphp-module-(.+)$@', $name, $matches)) {
             throw new \InvalidArgumentException(
@@ -122,10 +189,6 @@ class ScriptHandler
 
         $destDir = $sspPath.'/modules/'.$moduleDir;
 
-        $fs = new Filesystem();
-        $fs->mirror(
-            static::getInstallPath($event, $module),
-            $destDir
-        );
+        return $destDir;
     }
 }
